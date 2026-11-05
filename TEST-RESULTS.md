@@ -1,6 +1,8 @@
 # v1.1.0 輸入體驗驗證
 
-本機 Chromium + iPhone 13 尺寸 WebKit **40/40 通過（22.2 秒）**。本版正式站驗證待部署完成後補記。
+本機 Chromium + iPhone 13 尺寸 WebKit **40/40 通過（22.2 秒）**。正式 GitHub Pages 同套測試 **40/40 通過（44.4 秒）**。受測應用提交 `df1aba0`；GitHub Actions [run 41962909585](https://github.com/harrylin0312/query-lantern/actions/runs/41962909585) 建置、測試與部署皆成功。
+
+正式站另以行動 WebKit 截圖確認「極光調查站 v1.1.0」可見，390px 視窗的頁面寬度仍為 390px。
 
 新增案例：快捷鍵跟隨帳號／密碼欄位、保留游標與選取範圍、鍵盤操作、推理答案欄不誤寫 SQL、長文字與多行輸入的版面穩定性，以及所有頁面的手機版本號與資源版本一致性。
 
