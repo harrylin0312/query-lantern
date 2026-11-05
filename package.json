@@ -1,0 +1,18 @@
+{
+  "name": "query-lantern",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "playwright test",
+    "dev": "python3 -m http.server 4173"
+  },
+  "dependencies": {
+    "sql.js": "^1.13.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0"
+  },
+  "license": "MIT",
+  "description": "繁體中文 SQL Injection 互動學習與 SQLite WASM 安全實驗室"
+}
