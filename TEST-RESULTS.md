@@ -1,6 +1,10 @@
 # 最新修訂驗證（2026-11-05）
 
-本機 Chromium + iPhone 13 尺寸 WebKit：**32/32 通過（22.7 秒）**。正式站修訂版驗證待部署完成，之後補上結果。下方 16/16 為初版歷史紀錄，不代表新版評量，也不代表實體 iPhone 測試。
+本機 Chromium + iPhone 13 尺寸 WebKit：**32/32 通過（22.7 秒）**。正式 GitHub Pages 的同一套 Chromium + 行動 WebKit 測試：**32/32 通過（38.9 秒）**。受測應用提交：`5defbb5`。
+
+GitHub Actions [run 41944602730](https://github.com/harrylin0312/query-lantern/actions/runs/41944602730) 的建置、測試與 Pages 部署均成功。`app.js`、`course.js`、`worker.js` 與 `sql-wasm.wasm` 全部 HTTP 200，SHA-256 與本機受測版本一致。
+
+新版第 6、9、10 關另以 390px 行動 WebKit 檢查：頁面寬度皆為 390px，沒有整頁橫向溢出或 pageerror。下方 16/16 為初版歷史紀錄，不代表新版評量，也不代表實體 iPhone 測試。
 
 新增測試範圍：十關完整操作與理解檢查；註解、字串、死分支、永真及僅 EXISTS 表名的誤通關反例；未知隨機秘密的合法推理（含引號表名與別名）；資料面板、Worker 回應及錯誤訊息不洩漏秘密；與自由實驗室隔離；真實 SQLite 條件錯誤與資料探查；舊版進度與備份轉換；重置清除證據；非確定性函式不作證據；調查資料庫唯讀；模擬考回饋與弱點排序。
 
