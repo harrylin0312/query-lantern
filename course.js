@@ -135,18 +135,18 @@ export const lessons = [
     min: 30,
     kind: "blind",
     intro:
-      "這次端點只顯示「找到商品」或「沒有商品」，不公開資料列。盲注透過可觀察差異推理資料，而非直接顯示秘密。這裡的條件仍由真正 SQLite 執行。",
+      "這次端點只顯示「找到商品」或「沒有商品」，不公開資料列。秘密每次重置時隨機產生，與 UNION 關卡及自由實驗室完全分開。盲注透過可觀察差異推理資料，而非直接顯示秘密。這裡的條件仍由真正 SQLite 執行。",
     concept:
       "先做真／假對照，確定回應差異與條件有關，再用 substr 逐字詢問。一次有回應差異不等於已證明漏洞；需控制其他變因。",
-    goal: "用同一端點分別執行真、假條件，再提出一個引用 secrets 的真條件。",
+    goal: "先完成真／假對照，再用條件查詢推理隨機秘密的第一字元（A–Z），最後提交該字元。",
     start: "文具' AND 1=1 -- ",
     hints: [
       "先比較 AND 1=1 與 AND 1=2。",
-      "子查詢 (SELECT value FROM secrets) 取出單一值；substr(文字,1,1) 取第一字。",
-      "文具' AND substr((SELECT value FROM secrets),1,1)='A' -- ",
+      "子查詢 (SELECT value FROM secrets) 取出單一值；substr(文字,1,1) 取第一字。可先用 > 'M' 縮小 A–Z 範圍，再用 = 確認。",
+      "文具' AND substr((SELECT value FROM secrets),1,1)='X' -- ",
     ],
     explain:
-      "只有一個真假訊號也能逐步縮小秘密範圍。這個練習提供資料表結構，真實測試往往還需先推理結構。",
+      "你用資料驅動的條件辨識出未知字元。系統已讓相同查詢在不同秘密值下重跑，確認真假差異確實來自秘密內容；註解、字串或永真條件都不算證據。",
     q: [
       "沒有顯示資料庫錯誤，代表沒有 SQLi？",
       ["對", "不對", "只有 SQLite 才對"],
@@ -204,6 +204,62 @@ export const lessons = [
       ["一定拋錯", "NULL", "延遲五秒"],
       1,
       "錯誤行為依引擎不同。判斷錯誤型技術前要驗證方言與設定。",
+    ],
+  },
+  {
+    title: "讓錯誤成為可驗證的訊號",
+    tag: "條件錯誤",
+    day: 3,
+    min: 30,
+    kind: "errorproof",
+    intro:
+      "這個隔離端點不回傳資料列，只顯示正常或 SQLite 錯誤。秘密為另一組隨機大寫字母，不與 Boolean 關共享。你的任務是利用條件決定是否觸發錯誤，推理第一個字元。",
+    concept:
+      "SQLite 的除零回傳 NULL，不能當成條件錯誤。此實驗用真正的 json('bad') 觸發 malformed JSON；CASE WHEN 條件 THEN json('bad') ELSE 1 END 僅在指定條件成立時求值錯誤分支。這是 SQLite 的條件錯誤側通道，不是模擬 SQL Server / PostgreSQL 的型別轉換外洩，也不會讓錯誤直接包含秘密。",
+    goal: "先觀察正常與 malformed JSON 兩種回應，再讓錯誤只在秘密第一字元符合時發生，推理並提交該字元（A–Z）。",
+    start: "文具' AND CASE WHEN 1=1 THEN json('bad') ELSE 1 END -- ",
+    hints: [
+      "比較 CASE WHEN 1=1 與 CASE WHEN 1=2：哪個會真的求值 json('bad')？",
+      "把常數條件改成 substr((SELECT value FROM secrets),1,1) 的比較。錯誤=條件真，正常=條件假。",
+      "文具' AND CASE WHEN substr((SELECT value FROM secrets),1,1)='X' THEN json('bad') ELSE 1 END -- （X 只是候選字元，請自行推理）",
+    ],
+    explain:
+      "錯誤是否發生取決於秘密內容，因此正常／錯誤是一位元訊號。你已完成真正 SQLite 條件錯誤推理；這仍不同於把資料直接帶進詳細錯誤訊息的外洩技術。修復要參數化，不能只隱藏錯誤。",
+    q: [
+      "條件錯誤盲注依賴什麼？",
+      [
+        "秘密必須直接出現在錯誤文字",
+        "條件能控制是否發生可觀察錯誤",
+        "任何單次語法錯誤都代表成功",
+      ],
+      1,
+      "重點是受控條件與錯誤的穩定關係；語法錯誤本身不代表已推理秘密。",
+    ],
+  },
+  {
+    title: "先找結構，再找資料",
+    tag: "資料探查",
+    day: 3,
+    min: 25,
+    kind: "discovery",
+    intro:
+      "你取得一個隔離的唯讀 SQLite 查詢工作臺，但不知道任務代碼存在哪張表。右側資料字典只列公開商品。請先探查資料庫結構，再查出調度代碼。此關的隨機資料與其他實驗分開。",
+    concept:
+      "sqlite_schema（舊名 sqlite_master）保存資料表、索引等物件的定義。name 是物件名稱、type 是種類、sql 是建立語句。先用 WHERE type='table' 看資料表，再閱讀 CREATE TABLE 找出欄位。其他 DBMS 的中繼資料介面可能是 information_schema 或系統目錄，不能照搬 SQLite 名稱。",
+    goal: "先查出含 name 與 sql 的資料表定義，再依你找到的欄位讀取任務調度代碼。兩步都要實際執行。",
+    start: "SELECT name FROM sqlite_schema WHERE type='table'",
+    hints: [
+      "除了名稱，你還需要 CREATE TABLE 內的欄位定義。",
+      "SELECT name,sql FROM sqlite_schema WHERE type='table'",
+      "讀取 mission_archive 的建立語句後，試著 SELECT dispatch_code FROM mission_archive。代碼由此實驗隨機產生。",
+    ],
+    explain:
+      "你先從 SQLite 中繼資料找到結構，再查詢目標欄位。這裡是直接 SQL 工作臺；在 UNION 注入中，同樣的中繼資料 SELECT 還要符合原查詢的欄數與輸出位置。",
+    q: [
+      "sqlite_schema 的 sql 欄通常提供？",
+      ["每一列的秘密值", "物件的建立 SQL 定義", "目前使用者的明文密碼"],
+      1,
+      "它描述結構；知道資料表與欄位名稱後，仍需要另一個查詢才能讀取內容。",
     ],
   },
 ];

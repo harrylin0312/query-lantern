@@ -40,3 +40,15 @@ PortSwigger 路徑由注入定義、偵測、隱藏資料與邏輯繞過，延�
 ## 學習負擔檢視
 
 前兩關一次引入投影、條件兩組概念；首次注入前已先練單引號與 AND/OR。每關有目標、三層提示、執行結果與完成後理解檢查。估計核心兩日各約 2 小時，屬設計估時，尚未進行真人學習成效研究。適性功能為錯題主題優先排序與對應實驗補強，不宣稱有經實證的個人能力模型。
+
+## 評量修訂與進階實作研究
+
+本次另外讀取：
+
+- https://portswigger.net/web-security/sql-injection/blind
+- https://www.sqlite.org/json1.html
+- https://www.sqlite.org/schematab.html
+
+Boolean 與 Error-based 的教學重點是受秘密控制的可觀察差異，而非 SQL 文字出現表名。新版判題以真實 SQLite 反事實執行驗證訊號依賴，不嘗試用正規表示式判定 SQL 語意。錯誤實驗利用 SQLite JSON 對格式錯誤輸入的真實錯誤，並使用 CASE 控制是否求值；這是條件錯誤盲注，而不是詳細錯誤訊息直接外洩資料。資料探查實驗使用官方 sqlite_schema（亦接受 sqlite_master 別名），先查結構再讀內容。
+
+本機實際驗證 SELECT json('bad') 會拋出 malformed JSON；CASE WHEN 1=2 THEN json('bad') ELSE 1 END 正常回傳 1。未宣稱 SQLite 除零會拋錯，也未把 JSON 教學擴張為所有 DBMS 的通用技術。

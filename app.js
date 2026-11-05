@@ -14,6 +14,7 @@ const $ = (s) => document.querySelector(s),
     );
 let state = {
   version: 1,
+  assessmentRevision: 2,
   done: [],
   checks: [],
   wrong: [],
@@ -23,7 +24,27 @@ let state = {
 };
 try {
   const d = JSON.parse(localStorage.getItem("lantern-v1"));
-  if (d?.version === 1) state = { ...state, ...d };
+  if (d?.version === 1)
+    state = { ...state, ...d, assessmentRevision: d.assessmentRevision };
+} catch {}
+function migrateAssessment() {
+  state.wrong = state.wrong.map((w) => {
+    if (w.id?.startsWith("exam-")) {
+      const q = exam[Number(w.id.slice(5))];
+      if (q) return { ...w, tag: q[3], why: q[4] };
+    }
+    return w;
+  });
+  if (state.assessmentRevision !== 2) {
+    state.done = state.done.filter((i) => i !== 5);
+    state.checks = state.checks.filter((i) => i !== 5);
+    state.assessmentRevision = 2;
+  }
+}
+migrateAssessment();
+try {
+  if (localStorage.getItem("lantern-v1"))
+    localStorage.setItem("lantern-v1", JSON.stringify(state));
 } catch {}
 let worker,
   seq = 0,
@@ -70,7 +91,7 @@ function resetWorker() {
   };
 }
 resetWorker();
-function query(sql, params) {
+function query(sql, params, extra = {}) {
   return new Promise((resolve, reject) => {
     const id = ++seq;
     const t = setTimeout(() => {
@@ -79,7 +100,7 @@ function query(sql, params) {
       resetWorker();
     }, 3000);
     pending.set(id, { resolve, reject, t });
-    worker.postMessage({ id, sql, params });
+    worker.postMessage({ id, sql, params, ...extra });
   });
 }
 const table = (out) =>
@@ -105,7 +126,7 @@ function highlight(sql) {
 }
 function home() {
   $("#app").innerHTML =
-    `<div class="hero"><div><span class="eyebrow">FIELD TRAINING / SQL INJECTION</span><h1>看懂查詢，<br>才能看穿<span class="accent">漏洞。</span></h1><p>加入極光調查站。從第一張資料表開始，親手追蹤輸入如何變成 SQL，並用實驗證明你的推理。</p><div class="row"><button id="continue">${state.done.length ? "繼續調查" : "開始第一個任務"} ↗</button><a class="pill" href="#lab">直接進入實驗室 →</a></div></div><div class="hero-art" aria-hidden="true"><span class="eyebrow">QUERY OBSERVATORY / 01</span><div class="orbit"><span>INPUT → SQL</span></div><div class="art-code">SELECT understanding<br>FROM experiments<br>WHERE curiosity = true;</div></div></div><div class="stats"><div><strong>${state.done.length} / 8</strong><span>已完成實驗</span></div><div><strong>${state.checks.length} / 8</strong><span>理解檢查</span></div><div><strong>SQLite</strong><span>真實引擎 · 無需登入</span></div></div><div class="notice">兩日核心：第 1 日約 85 分鐘實驗＋30 分鐘複習；第 2 日約 85 分鐘實驗＋40 分鐘模擬考與補強。可分段休息，先理解再追求速度。</div>${[1, 2, 3].map((day) => `<h2 class="section-title">${day === 3 ? "進階延伸" : `DAY 0${day} · ${day === 1 ? "從資料到漏洞" : "從取證到修復"}`}</h2><div class="grid">${lessons.map((l, i) => (l.day === day ? `<a class="card lesson-card" href="#lesson/${i}"><span class="num">${state.done.includes(i) ? "✓" : String(i + 1).padStart(2, "0")}</span><div><span class="pill">${l.tag}</span><h3>${l.title}</h3><p>${l.min} 分鐘 · ${state.done.includes(i) ? "實驗完成" : "操作任務"}${state.checks.includes(i) ? " · 理解通過" : ""}</p></div></a>` : "")).join("")}</div>`).join("")}`;
+    `<div class="hero"><div><span class="eyebrow">FIELD TRAINING / SQL INJECTION</span><h1>看懂查詢，<br>才能看穿<span class="accent">漏洞。</span></h1><p>加入極光調查站。從第一張資料表開始，親手追蹤輸入如何變成 SQL，並用實驗證明你的推理。</p><div class="row"><button id="continue">${state.done.length ? "繼續調查" : "開始第一個任務"} ↗</button><a class="pill" href="#lab">直接進入實驗室 →</a></div></div><div class="hero-art" aria-hidden="true"><span class="eyebrow">QUERY OBSERVATORY / 01</span><div class="orbit"><span>INPUT → SQL</span></div><div class="art-code">SELECT understanding<br>FROM experiments<br>WHERE curiosity = true;</div></div></div><div class="stats"><div><strong>${state.done.length} / ${lessons.length}</strong><span>已完成實驗</span></div><div><strong>${state.checks.length} / ${lessons.length}</strong><span>理解檢查</span></div><div><strong>SQLite</strong><span>真實引擎 · 無需登入</span></div></div><div class="notice">兩日核心：第 1 日約 85 分鐘實驗＋30 分鐘複習；第 2 日約 85 分鐘實驗＋40 分鐘模擬考與補強。可分段休息，先理解再追求速度。</div>${[1, 2, 3].map((day) => `<h2 class="section-title">${day === 3 ? "進階延伸" : `DAY 0${day} · ${day === 1 ? "從資料到漏洞" : "從取證到修復"}`}</h2><div class="grid">${lessons.map((l, i) => (l.day === day ? `<a class="card lesson-card" href="#lesson/${i}"><span class="num">${state.done.includes(i) ? "✓" : String(i + 1).padStart(2, "0")}</span><div><span class="pill">${l.tag}</span><h3>${l.title}</h3><p>${l.min} 分鐘 · ${state.done.includes(i) ? "實驗完成" : "操作任務"}${state.checks.includes(i) ? " · 理解通過" : ""}</p></div></a>` : "")).join("")}</div>`).join("")}`;
   $("#continue").onclick = () =>
     (location.hash =
       "lesson/" +
@@ -118,7 +139,6 @@ function home() {
 }
 let current = -1,
   hint = 0,
-  observations = [],
   defenseInput = "",
   flowStep = 0,
   lastTrace = {};
@@ -133,26 +153,50 @@ const flowNames = [
 function renderLab(i = -1) {
   current = i;
   hint = 0;
-  observations = [];
   defenseInput = "";
   const l = lessons[i],
     kind = l?.kind || "sql";
   $("#app").innerHTML =
-    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / 8 · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div><div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
+    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / ${lessons.length} · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense", "errorproof"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div>${["blind", "errorproof"].includes(kind) ? `<div class="goal"><label for="inferred">你推理的秘密第一個字元（A–Z）</label><input id="inferred" maxlength="1" autocomplete="off" autocapitalize="characters" aria-describedby="inference-help"><small id="inference-help">先完成有／無訊號對照，再用確定性條件查詢辨識一個字元（例如 substr 比較）；random 等函式不作為通關證據。提示中的 X 不是答案。</small><button id="submit-inference" class="secondary">提交推理結果</button><div id="inference-result" aria-live="polite"></div></div>` : ""}<div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
   $("#jump-lab").onclick = () =>
     $("#workbench").scrollIntoView({ block: "start" });
   $("#input").oninput = preview;
   $("#safe")?.addEventListener("change", preview);
   $("#password")?.addEventListener("input", preview);
   $("#run").onclick = run;
+  $("#submit-inference")?.addEventListener("click", async () => {
+    const token = routeToken;
+    try {
+      const out = await query("", undefined, {
+        context: kind,
+        action: "answer",
+        answer: $("#inferred").value.trim().toUpperCase(),
+      });
+      if (token !== routeToken) return;
+      if (out[0].passed) {
+        $("#inference-result").textContent = "✓ 推理與查詢證據一致。";
+        complete(i);
+      } else
+        $("#inference-result").textContent =
+          "尚未通過：請完成兩種訊號對照，並用會隨秘密字元改變的條件驗證，再提交推理。";
+    } catch (e) {
+      if (token === routeToken) $("#inference-result").textContent = e.message;
+    }
+  });
   $("#reset").onclick = () => {
     resetWorker();
-    observations = [];
     defenseInput = "";
+    if ($("#inferred")) $("#inferred").value = "";
+    if ($("#inference-result"))
+      $("#inference-result").textContent = "證據已清空，請重新推理。";
     $("#result").innerHTML =
       '<div class="notice">資料庫已重建，請重新執行查詢。</div>';
     schema();
-    toast("已恢復原始虛構資料");
+    toast(
+      ["blind", "errorproof", "discovery"].includes(kind)
+        ? "秘密已重新隨機產生，請重新推理。"
+        : "已恢復原始虛構資料",
+    );
   };
   $("#refresh-data").onclick = schema;
   $("#hint")?.addEventListener("click", () => {
@@ -216,7 +260,7 @@ function built() {
     safe = $("#safe")?.checked;
   let sql = input,
     params;
-  if (["catalog", "defense", "blind"].includes(kind))
+  if (["catalog", "defense", "blind", "errorproof"].includes(kind))
     sql = safe
       ? "SELECT * FROM products WHERE category = ? AND released = 1"
       : `SELECT * FROM products WHERE category = '${input}' AND released = 1`;
@@ -242,8 +286,26 @@ async function schema() {
   const token = routeToken;
   try {
     let html = "";
-    for (const t of ["products", "users", "secrets"])
-      html += `<h3>${t}</h3>` + table(await query("SELECT * FROM " + t));
+    const restricted = ["blind", "errorproof", "discovery"].includes(
+      lessons[current]?.kind,
+    );
+    for (const t of restricted
+      ? ["products"]
+      : ["products", "users", "secrets"])
+      html +=
+        `<h3>${t}</h3>` +
+        table(
+          await query(
+            "SELECT * FROM " + t,
+            undefined,
+            restricted
+              ? { context: lessons[current].kind, action: "public" }
+              : {},
+          ),
+        );
+    if (restricted)
+      html +=
+        '<div class="notice">隔離調查模式：此面板只顯示公開商品。secrets(label TEXT, value TEXT) 的資料列不公開，秘密由 Worker 隨機產生，與其他關卡及自由實驗室分開。資料探查任務須自行查詢 sqlite_schema。</div>';
     if (token === routeToken && $("#schema")) $("#schema").innerHTML = html;
   } catch (e) {
     if (token === routeToken && $("#schema"))
@@ -285,7 +347,11 @@ async function run() {
   };
   save();
   try {
-    const out = await query(b.sql, b.params);
+    const out = await query(b.sql, b.params, {
+      context: ["blind", "errorproof", "discovery"].includes(b.kind)
+        ? b.kind
+        : "default",
+    });
     if (token !== routeToken) return;
     const values = out[0]?.values || [],
       cols = out[0]?.columns || [];
@@ -294,8 +360,10 @@ async function run() {
     showStep();
     $("#result").innerHTML =
       b.kind === "blind"
-        ? `<div class="notice">端點回應：${values.length ? "找到商品" : "沒有商品"}（刻意隱藏資料列）</div>`
-        : table(out);
+        ? `<div class="notice">端點回應：${out[0].observed ? "找到商品" : "沒有商品"}（僅回傳真假訊號；不傳送資料列）</div>`
+        : b.kind === "errorproof"
+          ? `<div class="${out[0].observed ? "error" : "notice"}">${out[0].observed ? "端點錯誤：" + esc(out[0].engineError) : "端點正常（不公開查詢資料列）"}</div>`
+          : table(out);
     let pass = false;
     if (id === 0)
       pass =
@@ -317,16 +385,6 @@ async function run() {
     if (id === 4)
       pass =
         !b.safe && values.some((v) => v[0] === "launch" && v[1] === "AURORA");
-    if (id === 5) {
-      observations.push({
-        yes: !!values.length,
-        secret: /secrets/i.test(b.sql) && !b.safe,
-      });
-      pass =
-        observations.some((o) => o.yes) &&
-        observations.some((o) => !o.yes) &&
-        observations.some((o) => o.secret && o.yes);
-    }
     if (id === 6) {
       if (!b.safe && values.some((v) => v.includes("未公開原型")))
         defenseInput = b.input;
@@ -336,6 +394,7 @@ async function run() {
         values.length === 0 &&
         !!defenseInput;
     }
+    if (b.kind === "discovery") pass = out[0].passed;
     if (pass) complete(id);
     else if (id >= 0)
       $("#result").insertAdjacentHTML(
@@ -388,7 +447,7 @@ function checkpoint() {
     }
     save();
     $("#feedback").innerHTML =
-      `<div class="${correct ? "success" : "error"}">${correct ? "✓ 理解正確" : "再想一想"}：${why}</div>${correct ? `<a class="pill" href="${id < 7 ? "#lesson/" + (id + 1) : "#exam"}">${id < 7 ? "前往下一站" : "前往模擬考"} →</a>` : "<p>請回到 SQL 對照條件與結果，再選一次。</p>"}`;
+      `<div class="${correct ? "success" : "error"}">${correct ? "✓ 理解正確" : "再想一想"}：${why}</div>${correct ? `<a class="pill" href="${id < lessons.length - 1 ? "#lesson/" + (id + 1) : "#exam"}">${id < lessons.length - 1 ? "前往下一站" : "前往模擬考"} →</a>` : "<p>請回到 SQL 對照條件與結果，再選一次。</p>"}`;
   };
 }
 function showStep() {
@@ -430,6 +489,8 @@ function recordWrong(id, q, why, tag) {
       "Boolean 盲注": "盲注",
       參數化防禦: "防禦",
       進階延伸: "方言",
+      條件錯誤: "盲注",
+      資料探查: "UNION",
     }[tag] || tag;
   const old = state.wrong.find((w) => w.id === id);
   if (old) {
@@ -448,7 +509,7 @@ function startExam() {
     .map((_, i) => i)
     .sort(
       (a, b) =>
-        Number(weak.includes(exam[b][4])) - Number(weak.includes(exam[a][4])),
+        Number(weak.includes(exam[b][3])) - Number(weak.includes(exam[a][3])),
     );
   examQuestion();
 }
@@ -462,7 +523,7 @@ function examQuestion() {
     });
     save();
     $("#app").innerHTML =
-      `<div class="examwrap"><span class="eyebrow">ASSESSMENT COMPLETE</span><h1>${score} / ${exam.length}</h1><p>這是練習測驗，不對應特定考試官方題型。選擇題之外，也要完成登入、UNION、盲注與防禦實作。</p>${answers.map((a, j) => `<div class="card review-item"><h3>${a.correct ? "✓" : "×"} ${exam[a.id][0]}</h3><p>正解：${esc(exam[a.id][1][exam[a.id][2]])}。${exam[a.id][5]}</p></div>`).join("")}<div class="row"><button id="again">再測一次</button><a href="#review">補強弱點 →</a></div></div>`;
+      `<div class="examwrap"><span class="eyebrow">ASSESSMENT COMPLETE</span><h1>${score} / ${exam.length}</h1><p>這是練習測驗，不對應特定考試官方題型。選擇題之外，也要完成登入、UNION、盲注與防禦實作。</p>${answers.map((a, j) => `<div class="card review-item"><h3>${a.correct ? "✓" : "×"} ${exam[a.id][0]}</h3><p>正解：${esc(exam[a.id][1][exam[a.id][2]])}。${exam[a.id][4]}</p></div>`).join("")}<div class="row"><button id="again">再測一次</button><a href="#review">補強弱點 →</a></div></div>`;
     $("#again").onclick = startExam;
     return;
   }
@@ -478,7 +539,7 @@ function examQuestion() {
         answered = true;
         const correct = +b.dataset.exam === q[2];
         answers.push({ id, correct });
-        if (!correct) recordWrong("exam-" + id, q[0], q[5], q[4]);
+        if (!correct) recordWrong("exam-" + id, q[0], q[4], q[3]);
         else {
           const w = state.wrong.find((w) => w.id === "exam-" + id);
           if (w) w.resolved = true;
@@ -486,7 +547,7 @@ function examQuestion() {
         save();
         b.classList.add("selected");
         $("#exam-feedback").innerHTML =
-          `<div class="${correct ? "success" : "error"}">${correct ? "正確" : "需要補強"} · ${q[5]}</div>`;
+          `<div class="${correct ? "success" : "error"}">${correct ? "正確" : "需要補強"} · ${q[4]}</div>`;
         $("#next-question").classList.remove("hidden");
       }),
   );
@@ -510,7 +571,7 @@ function review() {
 }
 function settings() {
   $("#app").innerHTML =
-    `<span class="eyebrow">YOUR LOCAL LOGBOOK</span><h1 class="lesson-title">保留每一步理解。</h1><div class="grid"><div class="card"><h2>進度與偏好</h2><p>進度保存在此瀏覽器；私人瀏覽或清除網站資料可能使紀錄消失。實驗資料庫每次重開會復原。</p><label class="row"><input type="checkbox" id="detail" ${state.prefs.detail ? "checked" : ""}> 預設展開詳細觀念</label><div class="toolbar"><button id="export">匯出進度 JSON</button><button class="secondary" id="import">匯入備份</button><input id="import-file" class="hidden" type="file" accept="application/json,.json"></div><div id="import-status" aria-live="polite"></div><small>匯入會取代目前學習紀錄，請先匯出備份。動畫遵循系統減少動態效果偏好。</small></div><div class="card source"><h2>教材與真實性</h2><p>原創任務、文字與題目。研究日期：2026-11-05。</p><ul><li><a href="https://portswigger.net/web-security/learning-paths/sql-injection" target="_blank" rel="noopener">PortSwigger 學習路徑</a>與 SQLi、UNION、Blind 教學</li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP 防禦 Cheat Sheet</a></li><li><a href="https://sql.js.org/documentation/" target="_blank" rel="noopener">sql.js 官方 API</a></li></ul><p>所有 SQL 實驗由 SQLite WASM 真實執行；流程圖為教學示意；時間型面板為明確標示的模型。沒有漏洞後端，也不能指定外部目標。</p></div></div>`;
+    `<span class="eyebrow">YOUR LOCAL LOGBOOK</span><h1 class="lesson-title">保留每一步理解。</h1><div class="grid"><div class="card"><h2>進度與偏好</h2><p>進度保存在此瀏覽器；私人瀏覽或清除網站資料可能使紀錄消失。實驗資料庫每次重開會復原。</p><label class="row"><input type="checkbox" id="detail" ${state.prefs.detail ? "checked" : ""}> 預設展開詳細觀念</label><div class="toolbar"><button id="export">匯出進度 JSON</button><button class="secondary" id="import">匯入備份</button><input id="import-file" class="hidden" type="file" accept="application/json,.json"></div><div id="import-status" aria-live="polite"></div><small>匯入會取代目前學習紀錄，請先匯出備份。動畫遵循系統減少動態效果偏好。</small></div><div class="card source"><h2>教材與真實性</h2><p>原創任務、文字與題目。研究日期：2026-11-05。</p><ul><li><a href="https://portswigger.net/web-security/learning-paths/sql-injection" target="_blank" rel="noopener">PortSwigger 學習路徑</a>與 SQLi、UNION、Blind 教學</li><li><a href="https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener">OWASP 防禦 Cheat Sheet</a></li><li><a href="https://sql.js.org/documentation/" target="_blank" rel="noopener">sql.js 官方 API</a></li></ul><p>所有 SQL 實驗由 SQLite WASM 真實執行；條件錯誤關使用 SQLite JSON 函式，不冒充其他 DBMS。流程圖為教學示意；時間型面板為明確標示的模型。沒有漏洞後端，也不能指定外部目標。</p></div></div>`;
   $("#detail").onchange = (e) => {
     state.prefs.detail = e.target.checked;
     save();
@@ -537,14 +598,17 @@ function settings() {
         !["done", "checks"].every(
           (k) =>
             Array.isArray(d[k]) &&
-            d[k].every((i) => Number.isInteger(i) && i >= 0 && i < 8),
+            d[k].every(
+              (i) => Number.isInteger(i) && i >= 0 && i < lessons.length,
+            ),
         ) ||
         !Array.isArray(d.wrong) ||
         !d.wrong.every(
           (w) =>
             typeof w.id === "string" &&
             typeof w.q === "string" &&
-            typeof w.why === "string" &&
+            (typeof w.why === "string" ||
+              (w.id.startsWith("exam-") && !!exam[Number(w.id.slice(5))])) &&
             typeof w.tag === "string" &&
             typeof w.count === "number",
         ) ||
@@ -556,7 +620,8 @@ function settings() {
         typeof d.prefs.detail !== "boolean"
       )
         throw Error("不支援或損壞的進度格式");
-      state = { ...state, ...d };
+      state = { ...state, ...d, assessmentRevision: d.assessmentRevision };
+      migrateAssessment();
       save();
       $("#import-status").textContent = "✓ 進度匯入成功。";
     } catch (err) {
