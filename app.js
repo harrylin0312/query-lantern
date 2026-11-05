@@ -99,7 +99,7 @@ function openHandbook() {
   renderHandbook($("#handbook-body"), true);
   document.body.classList.add("manual-open");
   manualDialog.showModal();
-  $("#guide-search").focus({ preventScroll: true });
+  $("#close-handbook").focus({ preventScroll: true });
 }
 function renderHandbook(container, embedded = false) {
   container.innerHTML = `${embedded ? "" : '<span class="eyebrow">BEGINNER FIELD GUIDE</span><h1 class="lesson-title">不懂的語法，隨時查。</h1>'}<p>不用一次記住。先查一個詞，讀白話解釋，再按「試跑範例」看真正的結果。範例使用獨立資料庫，與目前關卡的輸入、進度及秘密分開。</p><div class="manual-search"><label for="guide-search">搜尋知識、語法或錯誤訊息</label><input type="search" id="guide-search" placeholder="例如：引號、WHERE、AND OR、no such column" autocomplete="off" autocorrect="off"><label for="guide-category">範圍</label><select id="guide-category"><option value="全部">全部</option>${["入門", "SQL 語法", "漏洞原理", "防禦與排錯"].map((c) => `<option>${c}</option>`).join("")}</select></div><div class="toolbar manual-starters" aria-label="初學者快速查詢"><button class="secondary" data-topic="select">完全看不懂 SQL</button><button class="secondary" data-topic="quotes">引號怎麼用</button><button class="secondary" data-topic="boolean">AND 和 OR</button><button class="secondary" data-topic="errors">看不懂錯誤</button></div><p id="guide-count" role="status"></p><div id="guide-results"></div><p class="form-note source">語法依據 <a href="https://www.sqlite.org/lang_select.html" target="_blank" rel="noopener">SQLite SELECT</a>、<a href="https://www.sqlite.org/lang_expr.html" target="_blank" rel="noopener">運算式</a>與<a href="https://www.sqlite.org/lang_corefunc.html" target="_blank" rel="noopener">函式文件</a>；內容為原創白話說明。資料庫差異請見各條目的提醒。</p>`;
