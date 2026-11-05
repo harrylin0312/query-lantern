@@ -58,7 +58,7 @@ WebKit 裝置設定為 iPhone 13 模擬，不能等同實體 iPhone Safari 驗�
 
 推送 main 後 GitHub Actions 建置、測試、上傳 dist 並部署 Pages。儲存庫 Settings → Pages 的 source 設為 GitHub Actions。相對載入 `./worker.js`、`./vendor/sql-wasm.wasm`，不需要 SPA 伺服器 rewrite，也不依賴外部 CDN。
 
-公開站與部署驗證狀態以 `TEST-RESULTS.md` 為準，未成功部署前不宣稱已有正式網址。
+公開站已完成部署與 16/16 跨瀏覽器測試；詳細驗證與限制見 `TEST-RESULTS.md`。
 
 ## 教材與限制
 

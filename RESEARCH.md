@@ -8,6 +8,8 @@
 - https://portswigger.net/web-security/sql-injection/blind
 - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
 - https://sql.js.org/documentation/
+- https://portswigger.net/web-security/sql-injection/cheat-sheet
+- https://www.sqlite.org/lang_expr.html
 
 sql.js 首頁工具回傳無可讀文字，改讀上述官方 API 文件。沒有聲稱逐一完成 PortSwigger 51 項課程或其官方實驗。
 
