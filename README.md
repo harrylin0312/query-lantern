@@ -2,6 +2,10 @@
 
 繁體中文、Mobile-first 的 SQL Injection 學習遊戲。完全靜態，無帳號、無漏洞後端。資料均為虛構。
 
+公開網站：https://harrylin0312.github.io/query-lantern/
+
+GitHub：https://github.com/harrylin0312/query-lantern
+
 ## 學習內容
 
 兩日核心 7 關：資料表與 SELECT → WHERE / AND / OR → 條件注入 → 登入繞過 → UNION → Boolean 盲注 → 參數化防禦。第 8 關延伸真實錯誤觀察與明確標示的時間模型。

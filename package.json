@@ -11,7 +11,8 @@
     "sql.js": "^1.13.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.56.0"
+    "@playwright/test": "^1.56.0",
+    "prettier": "^3.9.10"
   },
   "license": "MIT",
   "description": "繁體中文 SQL Injection 互動學習與 SQLite WASM 安全實驗室"

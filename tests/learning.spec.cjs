@@ -1,10 +1,174 @@
-const {test,expect}=require('@playwright/test');
-async function go(page,i){await page.goto('./#lesson/'+i);await expect(page.locator('#schema')).toContainText('AURORA');}
-async function run(page,input){if(input!==undefined)await page.locator('#input').fill(input);await page.locator('#run').click();await expect(page.locator('#run')).toBeEnabled();}
-test('完整八關、理解檢查、保存與恢復',async({page})=>{const solutions=['SELECT name,price FROM products','SELECT * FROM products WHERE released=1 AND price<200',"' OR 1=1 -- ","admin' -- ","不存在' UNION SELECT label,value FROM secrets -- ",null,"' OR 1=1 -- ",'SELECT name,price FROM products UNION SELECT NULL'];const correct=[1,1,1,2,1,1,2,1];for(let i=0;i<8;i++){await go(page,i);if(i===5){await run(page,"文具' AND 1=1 -- ");await run(page,"文具' AND 1=2 -- ");await run(page,"文具' AND substr((SELECT value FROM secrets),1,1)='A' -- ");}else{await run(page,solutions[i]);if(i===6){await page.locator('#safe').check();await run(page)}}await expect(page.locator('#result')).toContainText('實驗目標達成');await page.locator('[data-answer="'+correct[i]+'"]').click();await expect(page.locator('#feedback')).toContainText('理解正確');}await page.goto('./#home');await expect(page.locator('.stats')).toContainText('8 / 8');await page.reload();await expect(page.locator('.stats')).toContainText('8 / 8');});
-test('真實引擎、安全模式、語法錯誤與重置',async({page})=>{await go(page,2);await run(page,"' OR 1=1 -- ");await expect(page.locator('#result')).toContainText('未公開原型');await page.locator('#safe').check();await run(page);await expect(page.locator('#result')).toContainText('0 列結果');await expect(page.locator('#binding')).toContainText('獨立綁定');await page.goto('./#lab');await run(page,'DELETE FROM products');await run(page,'SELECT * FROM products');await expect(page.locator('#result')).toContainText('0 列結果');await page.locator('#reset').click();await run(page,'SELECT * FROM products');await expect(page.locator('#result')).toContainText('4 列結果');await run(page,"SELECT '");await expect(page.locator('#result .error')).toBeVisible();});
-test('逾時終止且可重新執行',async({page})=>{await page.goto('./#lab');await expect(page.locator('#schema')).toContainText('AURORA');await run(page,'WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n) SELECT sum(x) FROM n');await expect(page.locator('#result')).toContainText('超過 3 秒');await run(page,'SELECT 42 AS answer');await expect(page.locator('#result')).toContainText('42');});
-test('提示、錯題、測驗計分、手機無整頁橫向溢出',async({page})=>{await go(page,0);await page.locator('#hint').click();await expect(page.locator('#hints')).toContainText('線索 1');await run(page,'SELECT name,price FROM products');await page.locator('[data-answer="0"]').click();await expect(page.locator('#feedback')).toContainText('再想一想');await page.goto('./#review');await expect(page.locator('main')).toContainText('待補強');await page.goto('./#exam');for(let i=0;i<12;i++){await page.locator('[data-exam="0"]').click();await page.locator('#next-question').click()}await expect(page.locator('h1')).toHaveText('2 / 12');await page.goto('./#home');expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();await go(page,4);expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();});
-test('進度匯出匯入與格式驗證',async({page})=>{await page.goto('./#settings');const download=page.waitForEvent('download');await page.locator('#export').click();expect((await download).suggestedFilename()).toContain('progress.json');await page.locator('#import-file').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{}')});await expect(page.locator('#import-status')).toContainText('匯入失敗');const backup={version:1,done:[0],checks:[0],wrong:[],prefs:{detail:false},examScores:[],attempts:{}};await page.locator('#import-file').setInputFiles({name:'good.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});await expect(page.locator('#import-status')).toContainText('匯入成功');await page.goto('./#home');await expect(page.locator('.stats')).toContainText('1 / 8');});
-test('流程播放、逐列觀察與模擬標示',async({page})=>{await go(page,1);await run(page,'SELECT * FROM products WHERE released=1 AND price<200');await page.locator('#next-step').click();await expect(page.locator('#stepbox')).toContainText('程式');await page.locator('#prev-step').click();await expect(page.locator('#stepbox')).toContainText('輸入內容');await page.locator('#play').click();await expect(page.locator('#play')).toHaveText('暫停');await page.locator('#play').click();await expect(page.locator('#play')).toHaveText('播放');await page.locator('#price').fill('100');await expect(page.locator('#trace')).toContainText('price < 100');await expect(page.locator('#trace .pass')).toHaveCount(1);await go(page,7);await page.locator('#simulate').click();await expect(page.locator('#time-result')).toContainText('模擬觀測');await expect(page.locator('#time-result')).toContainText('2,100');});
-test('輸出限制與引擎記憶體限制',async({page})=>{await page.goto('./#lab');await run(page,"SELECT printf('%03000d',1) AS longtext");await expect(page.locator('#result')).toContainText('截斷');await run(page,'SELECT length(randomblob(100000000))');await expect(page.locator('#result .error')).toBeVisible();await run(page,'SELECT 1 AS recovered');await expect(page.locator('#result')).toContainText('recovered');});
+const { test, expect } = require("@playwright/test");
+async function go(page, i) {
+  await page.goto("./#lesson/" + i);
+  await expect(page.locator("#schema")).toContainText("AURORA");
+}
+async function run(page, input) {
+  if (input !== undefined) await page.locator("#input").fill(input);
+  await page.locator("#run").click();
+  await expect(page.locator("#run")).toBeEnabled();
+}
+test("完整八關、理解檢查、保存與恢復", async ({ page }) => {
+  const solutions = [
+    "SELECT name,price FROM products",
+    "SELECT * FROM products WHERE released=1 AND price<200",
+    "' OR 1=1 -- ",
+    "admin' -- ",
+    "不存在' UNION SELECT label,value FROM secrets -- ",
+    null,
+    "' OR 1=1 -- ",
+    "SELECT name,price FROM products UNION SELECT NULL",
+  ];
+  const correct = [1, 1, 1, 2, 1, 1, 2, 1];
+  for (let i = 0; i < 8; i++) {
+    await go(page, i);
+    if (i === 5) {
+      await run(page, "文具' AND 1=1 -- ");
+      await run(page, "文具' AND 1=2 -- ");
+      await run(
+        page,
+        "文具' AND substr((SELECT value FROM secrets),1,1)='A' -- ",
+      );
+    } else {
+      await run(page, solutions[i]);
+      if (i === 6) {
+        await page.locator("#safe").check();
+        await run(page);
+      }
+    }
+    await expect(page.locator("#result")).toContainText("實驗目標達成");
+    await page.locator('[data-answer="' + correct[i] + '"]').click();
+    await expect(page.locator("#feedback")).toContainText("理解正確");
+  }
+  await page.goto("./#home");
+  await expect(page.locator(".stats")).toContainText("8 / 8");
+  await page.reload();
+  await expect(page.locator(".stats")).toContainText("8 / 8");
+});
+test("真實引擎、安全模式、語法錯誤與重置", async ({ page }) => {
+  await go(page, 2);
+  await run(page, "' OR 1=1 -- ");
+  await expect(page.locator("#result")).toContainText("未公開原型");
+  await page.locator("#safe").check();
+  await run(page);
+  await expect(page.locator("#result")).toContainText("0 列結果");
+  await expect(page.locator("#binding")).toContainText("獨立綁定");
+  await page.goto("./#lab");
+  await run(page, "DELETE FROM products");
+  await run(page, "SELECT * FROM products");
+  await expect(page.locator("#result")).toContainText("0 列結果");
+  await page.locator("#reset").click();
+  await run(page, "SELECT * FROM products");
+  await expect(page.locator("#result")).toContainText("4 列結果");
+  await run(page, "SELECT '");
+  await expect(page.locator("#result .error")).toBeVisible();
+});
+test("逾時終止且可重新執行", async ({ page }) => {
+  await page.goto("./#lab");
+  await expect(page.locator("#schema")).toContainText("AURORA");
+  await run(
+    page,
+    "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n) SELECT sum(x) FROM n",
+  );
+  await expect(page.locator("#result")).toContainText("超過 3 秒");
+  await run(page, "SELECT 42 AS answer");
+  await expect(page.locator("#result")).toContainText("42");
+});
+test("提示、錯題、測驗計分、手機無整頁橫向溢出", async ({ page }) => {
+  await go(page, 0);
+  await page.locator("#hint").click();
+  await expect(page.locator("#hints")).toContainText("線索 1");
+  await run(page, "SELECT name,price FROM products");
+  await page.locator('[data-answer="0"]').click();
+  await expect(page.locator("#feedback")).toContainText("再想一想");
+  await page.goto("./#review");
+  await expect(page.locator("main")).toContainText("待補強");
+  await page.goto("./#exam");
+  for (let i = 0; i < 12; i++) {
+    await page.locator('[data-exam="0"]').click();
+    await page.locator("#next-question").click();
+  }
+  await expect(page.locator("h1")).toHaveText("2 / 12");
+  await page.goto("./#home");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
+  await go(page, 4);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBeTruthy();
+});
+test("進度匯出匯入與格式驗證", async ({ page }) => {
+  await page.goto("./#settings");
+  const download = page.waitForEvent("download");
+  await page.locator("#export").click();
+  expect((await download).suggestedFilename()).toContain("progress.json");
+  await page.locator("#import-file").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from("{}"),
+  });
+  await expect(page.locator("#import-status")).toContainText("匯入失敗");
+  const backup = {
+    version: 1,
+    done: [0],
+    checks: [0],
+    wrong: [],
+    prefs: { detail: false },
+    examScores: [],
+    attempts: {},
+  };
+  await page.locator("#import-file").setInputFiles({
+    name: "good.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
+  await expect(page.locator("#import-status")).toContainText("匯入成功");
+  await page.goto("./#home");
+  await expect(page.locator(".stats")).toContainText("1 / 8");
+});
+test("流程播放、逐列觀察與模擬標示", async ({ page }) => {
+  await go(page, 1);
+  await run(page, "SELECT * FROM products WHERE released=1 AND price<200");
+  await page.locator("#next-step").click();
+  await expect(page.locator("#stepbox")).toContainText("程式");
+  await page.locator("#prev-step").click();
+  await expect(page.locator("#stepbox")).toContainText("輸入內容");
+  await page.locator("#play").click();
+  await expect(page.locator("#play")).toHaveText("暫停");
+  await page.locator("#play").click();
+  await expect(page.locator("#play")).toHaveText("播放");
+  await page.locator("#price").fill("100");
+  await expect(page.locator("#trace")).toContainText("price < 100");
+  await expect(page.locator("#trace .pass")).toHaveCount(1);
+  await go(page, 7);
+  await page.locator("#simulate").click();
+  await expect(page.locator("#time-result")).toContainText("模擬觀測");
+  await expect(page.locator("#time-result")).toContainText("2,100");
+});
+test("輸出限制與引擎記憶體限制", async ({ page }) => {
+  await page.goto("./#lab");
+  await run(page, "SELECT printf('%03000d',1) AS longtext");
+  await expect(page.locator("#result")).toContainText("截斷");
+  await run(page, "SELECT length(randomblob(100000000))");
+  await expect(page.locator("#result .error")).toBeVisible();
+  await run(page, "SELECT 1 AS recovered");
+  await expect(page.locator("#result")).toContainText("recovered");
+});
+test("弱點主題排序與補強後解除標記", async ({ page }) => {
+  await go(page, 0);
+  await page.locator("#jump-lab").click();
+  await run(page, "SELECT name,price FROM products");
+  await page.locator('[data-answer="0"]').click();
+  await page.goto("./#exam");
+  await expect(page.locator("h1")).toContainText("SELECT name FROM products");
+  await go(page, 0);
+  await run(page, "SELECT name,price FROM products");
+  await page.locator('[data-answer="1"]').click();
+  await page.goto("./#review");
+  await expect(page.locator("main")).toContainText("目前沒有待補強錯題");
+});
