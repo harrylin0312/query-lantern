@@ -12,6 +12,7 @@
       content="從零開始，兩日理解 SQL Injection。在瀏覽器內安全操作真正的 SQLite。"
     />
     <title>Query Lantern｜極光 SQL 調查站</title>
+    <script src="theme.js?v=__APP_VERSION__"></script>
     <link rel="stylesheet" href="style.css?v=__APP_VERSION__" />
   </head>
   <body>
@@ -24,14 +25,45 @@
             >v__APP_VERSION__</span
           ></span
         ></a
-      ><span class="status">● LOCAL LAB</span>
+      >
+      <div class="header-controls">
+        <span class="status">● LOCAL LAB</span
+        ><button
+          id="theme-toggle"
+          data-theme-toggle
+          class="secondary"
+          type="button"
+          aria-label="切換閱讀亮暗模式"
+        >
+          亮／暗
+        </button>
+      </div>
     </header>
     <nav aria-label="主要導覽">
-      <a href="#home">學習路線</a><a href="#lab">自由實驗</a
-      ><a href="#exam">模擬考</a><a href="#review">弱點複習</a
-      ><a href="#settings">紀錄與來源</a>
+      <a href="#home">學習路線</a><a href="#guide">知識手冊</a
+      ><a href="#lab">自由實驗</a><a href="#exam">模擬考</a
+      ><a href="#review">弱點複習</a><a href="#settings">紀錄與來源</a>
     </nav>
     <main id="app"></main>
+    <dialog id="handbook-dialog" aria-labelledby="handbook-title">
+      <div class="manual-header">
+        <h2 id="handbook-title">知識與語法手冊</h2>
+        <div class="manual-actions">
+          <button
+            id="manual-theme-toggle"
+            data-theme-toggle
+            class="secondary"
+            type="button"
+            aria-label="切換閱讀亮暗模式"
+          >
+            亮／暗</button
+          ><button id="close-handbook" class="secondary" type="button">
+            關閉手冊
+          </button>
+        </div>
+      </div>
+      <div id="handbook-body"></div>
+    </dialog>
     <footer>
       所有系統與資料皆為虛構 · SQL 僅於本機隔離環境執行<br />原理優先，讓每次輸入都有理由。
     </footer>

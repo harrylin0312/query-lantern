@@ -33,12 +33,12 @@ GitHub：https://github.com/harrylin0312/query-lantern
 
 ## 開發
 
-需求 Node.js 22+、Python 3（本機測試伺服器）。
+需求 Node.js 22+。本機預覽與測試使用 Node.js 內建靜態伺服器。
 
 ```sh
 npm ci
 npm run build
-python3 -m http.server 4173 --directory dist
+npm run dev
 ```
 
 開啟 http://localhost:4173 。修改後重新 build 與刷新。
@@ -81,3 +81,11 @@ WebKit 裝置設定為 iPhone 13 模擬，不能等同實體 iPhone Safari 驗�
 - SQL 預覽與參數區固定高度、內部捲動，長文字或多行輸入不再推動執行按鈕與下方內容。Grid 欄寬不受內容最小寬度撐大。
 - 桌面與手機的「極光調查站」旁皆顯示版本號。`package.json` 的 version 是單一來源；建置時注入 HTML 與程式，CSS、應用程式、課程與 Worker URL 使用版本參數降低舊快取混用。
 - 發佈新版請一併更新 package.json 與 package-lock.json 的版本後建置。測試從 package.json 取得預期版本。
+
+## v1.2.0：初學者知識手冊與閱讀主題
+
+- `handbook.js`：23 個原創白話條目，可搜尋語法、觀念與錯誤訊息，亦可依入門／SQL 語法／漏洞原理／防禦與排錯篩選。包含語法模板、逐段解釋、預期結果與容易搞混的地方。
+- 主導覽「知識手冊」為獨立查詢頁；每個實驗的「查語法與觀念」開啟原生 dialog，不離開路由、不清空輸入或查詢結果。支援關閉按鈕與 Escape。
+- 每個條目可用真正 SQLite 試跑完整例子；Worker 的 handbook 資料庫獨立、唯讀、使用公開固定範例資料，不改動關卡或自由實驗資料，也不讀取隨機秘密。
+- `theme.js` 在樣式繪製前套用偏好；預設跟隨系統，手動選擇後保存。主頁右上角與手冊視窗皆可切換亮／暗模式；偏好可隨進度 JSON 匯出與匯入。原課程、提示、實驗與進度皆保留。
+- `scripts/serve.cjs` 提供本機靜態預覽；GitHub Pages 正式環境仍完全靜態。Actions 新增 verify-live，在部署後對正式站執行同套 Chromium / 行動 WebKit 測試。

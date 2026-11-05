@@ -1,4 +1,5 @@
 import { lessons, exam } from "./course.js?v=__APP_VERSION__";
+import { handbook } from "./handbook.js?v=__APP_VERSION__";
 const APP_VERSION = "__APP_VERSION__";
 document.querySelector(".version").textContent = "v" + APP_VERSION;
 const $ = (s) => document.querySelector(s),
@@ -48,6 +49,125 @@ try {
   if (localStorage.getItem("lantern-v1"))
     localStorage.setItem("lantern-v1", JSON.stringify(state));
 } catch {}
+
+function applyReadingTheme(theme) {
+  const value = theme === "light" ? "light" : "dark";
+  document.documentElement.dataset.theme = value;
+  document.querySelector('meta[name="theme-color"]').content =
+    value === "light" ? "#f5f3ec" : "#101b26";
+  document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+    button.textContent = value === "dark" ? "☀ 亮色" : "☾ 暗色";
+    button.setAttribute(
+      "aria-label",
+      value === "dark"
+        ? "目前暗色，切換為亮色模式"
+        : "目前亮色，切換為暗色模式",
+    );
+  });
+}
+applyReadingTheme(document.documentElement.dataset.theme);
+document.querySelectorAll("[data-theme-toggle]").forEach(
+  (button) =>
+    (button.onclick = () => {
+      const theme =
+        document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      applyReadingTheme(theme);
+      state.prefs.theme = theme;
+      try {
+        localStorage.setItem("lantern-theme-v1", theme);
+      } catch {
+        toast("無法保存閱讀偏好。");
+      }
+      save();
+    }),
+);
+matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
+  let saved;
+  try {
+    saved = localStorage.getItem("lantern-theme-v1");
+  } catch {}
+  if (!["light", "dark"].includes(saved))
+    applyReadingTheme(e.matches ? "light" : "dark");
+});
+const manualDialog = $("#handbook-dialog");
+$("#close-handbook").onclick = () => manualDialog.close();
+manualDialog.addEventListener("close", () => {
+  document.body.classList.remove("manual-open");
+  $("#handbook-body").replaceChildren();
+});
+function openHandbook() {
+  renderHandbook($("#handbook-body"), true);
+  document.body.classList.add("manual-open");
+  manualDialog.showModal();
+  $("#guide-search").focus({ preventScroll: true });
+}
+function renderHandbook(container, embedded = false) {
+  container.innerHTML = `${embedded ? "" : '<span class="eyebrow">BEGINNER FIELD GUIDE</span><h1 class="lesson-title">不懂的語法，隨時查。</h1>'}<p>不用一次記住。先查一個詞，讀白話解釋，再按「試跑範例」看真正的結果。範例使用獨立資料庫，與目前關卡的輸入、進度及秘密分開。</p><div class="manual-search"><label for="guide-search">搜尋知識、語法或錯誤訊息</label><input type="search" id="guide-search" placeholder="例如：引號、WHERE、AND OR、no such column" autocomplete="off" autocorrect="off"><label for="guide-category">範圍</label><select id="guide-category"><option value="全部">全部</option>${["入門", "SQL 語法", "漏洞原理", "防禦與排錯"].map((c) => `<option>${c}</option>`).join("")}</select></div><div class="toolbar manual-starters" aria-label="初學者快速查詢"><button class="secondary" data-topic="select">完全看不懂 SQL</button><button class="secondary" data-topic="quotes">引號怎麼用</button><button class="secondary" data-topic="boolean">AND 和 OR</button><button class="secondary" data-topic="errors">看不懂錯誤</button></div><p id="guide-count" role="status"></p><div id="guide-results"></div><p class="form-note source">語法依據 <a href="https://www.sqlite.org/lang_select.html" target="_blank" rel="noopener">SQLite SELECT</a>、<a href="https://www.sqlite.org/lang_expr.html" target="_blank" rel="noopener">運算式</a>與<a href="https://www.sqlite.org/lang_corefunc.html" target="_blank" rel="noopener">函式文件</a>；內容為原創白話說明。資料庫差異請見各條目的提醒。</p>`;
+  const search = container.querySelector("#guide-search"),
+    category = container.querySelector("#guide-category");
+  let generation = 0,
+    selectedTopic = null;
+  const normalize = (t) => t.normalize("NFKC").toLocaleLowerCase();
+  function update() {
+    generation++;
+    const terms = normalize(search.value.trim()).split(/\s+/).filter(Boolean);
+    const matches = handbook.filter(
+      (item) =>
+        (category.value === "全部" || item.category === category.value) &&
+        (selectedTopic
+          ? item.id === selectedTopic
+          : terms.every((term) =>
+              normalize(JSON.stringify(item)).includes(term),
+            )),
+    );
+    container.querySelector("#guide-count").textContent =
+      `找到 ${matches.length} / ${handbook.length} 個條目`;
+    container.querySelector("#guide-results").innerHTML = matches.length
+      ? matches
+          .map(
+            (item) =>
+              `<details class="manual-entry" data-entry="${item.id}" ${terms.length && matches.length <= 3 ? "open" : ""}><summary><span class="pill">${item.category}</span><span>${esc(item.title)}</span></summary><p>${esc(item.plain)}</p><h3>常見寫法</h3><pre>${highlight(item.syntax)}</pre><h3>拆開來讀</h3><dl>${item.parts.map(([term, meaning]) => `<dt>${esc(term)}</dt><dd>${esc(meaning)}</dd>`).join("")}</dl><h3>可試跑的完整 SQL</h3><pre>${highlight(item.example)}</pre><p><strong>先預測：</strong>${esc(item.expected)}</p><button class="secondary" data-example="${item.id}">試跑範例</button><div class="manual-result" aria-live="polite"></div><div class="notice"><strong>容易搞混：</strong>${esc(item.mistake)}</div></details>`,
+          )
+          .join("")
+      : '<div class="notice">目前沒有符合的條目。試試較短的關鍵字，例如 SELECT、引號、NULL，或切換範圍為「全部」。</div>';
+  }
+  search.addEventListener("input", () => {
+    selectedTopic = null;
+    update();
+  });
+  category.addEventListener("change", () => {
+    selectedTopic = null;
+    update();
+  });
+  container.querySelector(".manual-starters").onclick = (e) => {
+    const button = e.target.closest("[data-topic]");
+    if (!button) return;
+    category.value = "全部";
+    selectedTopic = button.dataset.topic;
+    search.value = handbook.find((item) => item.id === selectedTopic).title;
+    update();
+  };
+  container.querySelector("#guide-results").onclick = async (e) => {
+    const button = e.target.closest("[data-example]");
+    if (!button) return;
+    const item = handbook.find((x) => x.id === button.dataset.example),
+      result = button.nextElementSibling,
+      requestGeneration = generation;
+    button.disabled = true;
+    result.textContent = "獨立範例資料庫執行中…";
+    try {
+      const out = await query(item.example, undefined, { context: "handbook" });
+      if (!result.isConnected || requestGeneration !== generation) return;
+      result.innerHTML = table(out);
+    } catch (err) {
+      if (result.isConnected && requestGeneration === generation)
+        result.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+    } finally {
+      button.disabled = false;
+    }
+  };
+  update();
+}
 let worker,
   seq = 0,
   pending = new Map(),
@@ -159,9 +279,10 @@ function renderLab(i = -1) {
   const l = lessons[i],
     kind = l?.kind || "sql";
   $("#app").innerHTML =
-    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / ${lessons.length} · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense", "errorproof"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocorrect="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<small id="key-target" aria-live="polite"></small><div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div>${["blind", "errorproof"].includes(kind) ? `<div class="goal"><label for="inferred">你推理的秘密第一個字元（A–Z）</label><input id="inferred" maxlength="1" autocomplete="off" autocapitalize="characters" aria-describedby="inference-help"><small id="inference-help">先完成有／無訊號對照，再用確定性條件查詢辨識一個字元（例如 substr 比較）；random 等函式不作為通關證據。提示中的 X 不是答案。</small><button id="submit-inference" class="secondary">提交推理結果</button><div id="inference-result" aria-live="polite"></div></div>` : ""}<div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
+    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / ${lessons.length} · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button><button class="secondary" id="open-handbook">查語法與觀念</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense", "errorproof"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocorrect="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<small id="key-target" aria-live="polite"></small><div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div>${["blind", "errorproof"].includes(kind) ? `<div class="goal"><label for="inferred">你推理的秘密第一個字元（A–Z）</label><input id="inferred" maxlength="1" autocomplete="off" autocapitalize="characters" aria-describedby="inference-help"><small id="inference-help">先完成有／無訊號對照，再用確定性條件查詢辨識一個字元（例如 substr 比較）；random 等函式不作為通關證據。提示中的 X 不是答案。</small><button id="submit-inference" class="secondary">提交推理結果</button><div id="inference-result" aria-live="polite"></div></div>` : ""}<div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
   $("#jump-lab").onclick = () =>
     $("#workbench").scrollIntoView({ block: "start" });
+  $("#open-handbook").onclick = openHandbook;
   $("#input").oninput = preview;
   $("#safe")?.addEventListener("change", preview);
   $("#password")?.addEventListener("input", preview);
@@ -692,11 +813,19 @@ function settings() {
           (s) => typeof s.date === "string" && typeof s.score === "number",
         ) ||
         !d.prefs ||
-        typeof d.prefs.detail !== "boolean"
+        typeof d.prefs.detail !== "boolean" ||
+        (d.prefs.theme !== undefined &&
+          !["light", "dark"].includes(d.prefs.theme))
       )
         throw Error("不支援或損壞的進度格式");
       state = { ...state, ...d, assessmentRevision: d.assessmentRevision };
       migrateAssessment();
+      if (d.prefs.theme) {
+        applyReadingTheme(d.prefs.theme);
+        try {
+          localStorage.setItem("lantern-theme-v1", d.prefs.theme);
+        } catch {}
+      }
       save();
       $("#import-status").textContent = "✓ 進度匯入成功。";
     } catch (err) {
@@ -705,6 +834,7 @@ function settings() {
   };
 }
 function route() {
+  if (manualDialog.open) manualDialog.close();
   routeToken++;
   clearInterval(flowTimer);
   flowTimer = null;
@@ -720,6 +850,7 @@ function route() {
   else if (hash === "exam") startExam();
   else if (hash === "review") review();
   else if (hash === "settings") settings();
+  else if (hash === "guide") renderHandbook($("#app"));
   else home();
   window.scrollTo(0, 0);
 }

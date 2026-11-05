@@ -1,7 +1,15 @@
 const fs = require("fs");
 const { version } = require("../package.json");
 fs.mkdirSync("dist/vendor", { recursive: true });
-for (const f of ["index.html", "app.js", "course.js", "style.css", "worker.js"])
+for (const f of [
+  "index.html",
+  "app.js",
+  "course.js",
+  "style.css",
+  "worker.js",
+  "theme.js",
+  "handbook.js",
+])
   fs.writeFileSync(
     "dist/" + f,
     fs.readFileSync(f, "utf8").replaceAll("__APP_VERSION__", version),

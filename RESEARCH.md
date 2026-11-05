@@ -52,3 +52,13 @@ PortSwigger 路徑由注入定義、偵測、隱藏資料與邏輯繞過，延�
 Boolean 與 Error-based 的教學重點是受秘密控制的可觀察差異，而非 SQL 文字出現表名。新版判題以真實 SQLite 反事實執行驗證訊號依賴，不嘗試用正規表示式判定 SQL 語意。錯誤實驗利用 SQLite JSON 對格式錯誤輸入的真實錯誤，並使用 CASE 控制是否求值；這是條件錯誤盲注，而不是詳細錯誤訊息直接外洩資料。資料探查實驗使用官方 sqlite_schema（亦接受 sqlite_master 別名），先查結構再讀內容。
 
 本機實際驗證 SELECT json('bad') 會拋出 malformed JSON；CASE WHEN 1=2 THEN json('bad') ELSE 1 END 正常回傳 1。未宣稱 SQLite 除零會拋錯，也未把 JSON 教學擴張為所有 DBMS 的通用技術。
+
+## v1.2.0 初學者手冊
+
+另讀取 SQLite 官方 SELECT、Expressions 與 Core Functions 文件：
+
+- https://www.sqlite.org/lang_select.html
+- https://www.sqlite.org/lang_expr.html
+- https://www.sqlite.org/lang_corefunc.html
+
+將現有關卡依賴的語法補成可獨立查閱的23條白話說明。每個條目包含完整可執行例子與預期資料，並在獨立SQLite資料庫驗證；語法模板以中文欄位等佔位詞呈現，與真正可執行範例明確區分。特別澄清直單引號、AND優先序、NULL比較、substr正數索引從1起、UNION欄數、參數不能取代識別字，以及SQL方言差異。這是查閱與補充工具，不宣稱真人研究已證明學習成效。

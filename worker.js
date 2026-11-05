@@ -1,5 +1,5 @@
 importScripts("./vendor/sql-wasm.js");
-let db, SQL;
+let db, SQL, handbookDb;
 const seed = `CREATE TABLE products(id INTEGER,name TEXT,category TEXT,price INTEGER,released INTEGER); INSERT INTO products VALUES(1,'月光筆記','文具',80,1),(2,'星圖','文具',120,1),(3,'未公開原型','機密',990,0),(4,'軌道杯','生活',250,1);CREATE TABLE users(id INTEGER,username TEXT,password TEXT,role TEXT);INSERT INTO users VALUES(1,'admin','ORBIT-42','管理員'),(2,'mira','moon123','學員');CREATE TABLE secrets(label TEXT,value TEXT);INSERT INTO secrets VALUES('launch','AURORA');`;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function randomCode(n) {
@@ -166,7 +166,14 @@ onmessage = async ({ data: m }) => {
   try {
     await ready;
     let out;
-    if (
+    if (context === "handbook") {
+      if (!handbookDb) {
+        handbookDb = new SQL.Database();
+        handbookDb.run(seed);
+      }
+      handbookDb.run("PRAGMA query_only=ON");
+      out = execute(handbookDb, m.sql, m.params);
+    } else if (
       m.action === "public" &&
       ["blind", "errorproof", "discovery"].includes(context)
     ) {
