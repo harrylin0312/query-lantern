@@ -2,7 +2,9 @@
 
 本機最終 Chromium：25/25 通過（22.0 秒）。新增條目中的全部23個SQL例子皆以真正SQLite驗證結果；查手冊保留原輸入與結果，獨立範例不改動自由實驗資料；亮暗切換、系統偏好、持久保存及備份匯入匯出皆通過。320px與390px亮／暗手冊頁面均無整頁橫向溢出。
 
-本機macOS的WebKit測試引擎出現啟動停滯，未將不完整執行宣稱為通過。完整Chromium／WebKit與部署後正式站測試交由Actions的build與verify-live完成，結果待部署後補記。未使用實體iPhone Safari。
+本機macOS的WebKit測試引擎出現啟動停滯，未將不完整執行宣稱為通過。GitHub Actions [run 42020963215](https://github.com/harrylin0312/query-lantern/actions/runs/42020963215) 的 build、deploy、verify-live 全部成功：建置環境 Chromium／行動 WebKit 共 **50/50 通過（1.0 分鐘）**；部署後對正式公開網址執行同套測試也 **50/50 通過（1.0 分鐘）**。受測應用提交為 `07cdc42`。未使用實體iPhone Safari。
+
+另以電腦內建瀏覽器直接打開正式站，確認 v1.2.0、亮色切換、初學者快速查詢與 SQL 範例試跑，實際回傳四列商品；截圖見 `docs/qa/v1.2.0-handbook-public.jpg`。
 
 原專案目錄因本機磁碟空間不足與檔案讀取逾時無法正常使用，保留原目錄並從已同步遠端建立隔離工作副本；未覆寫或提交上層無關儲存庫。
 
