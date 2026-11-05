@@ -1,4 +1,6 @@
-import { lessons, exam } from "./course.js";
+import { lessons, exam } from "./course.js?v=__APP_VERSION__";
+const APP_VERSION = "__APP_VERSION__";
+document.querySelector(".version").textContent = "v" + APP_VERSION;
 const $ = (s) => document.querySelector(s),
   esc = (s) =>
     String(s ?? "NULL").replace(
@@ -74,7 +76,7 @@ function resetWorker() {
     p.reject(Error("實驗環境已重置，請重新執行。"));
   }
   pending.clear();
-  worker = new Worker(new URL("./worker.js", import.meta.url));
+  worker = new Worker(new URL("./worker.js?v=" + APP_VERSION, import.meta.url));
   worker.onmessage = ({ data: m }) => {
     const p = pending.get(m.id);
     if (!p) return;
@@ -157,7 +159,7 @@ function renderLab(i = -1) {
   const l = lessons[i],
     kind = l?.kind || "sql";
   $("#app").innerHTML =
-    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / ${lessons.length} · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense", "errorproof"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div>${["blind", "errorproof"].includes(kind) ? `<div class="goal"><label for="inferred">你推理的秘密第一個字元（A–Z）</label><input id="inferred" maxlength="1" autocomplete="off" autocapitalize="characters" aria-describedby="inference-help"><small id="inference-help">先完成有／無訊號對照，再用確定性條件查詢辨識一個字元（例如 substr 比較）；random 等函式不作為通關證據。提示中的 X 不是答案。</small><button id="submit-inference" class="secondary">提交推理結果</button><div id="inference-result" aria-live="polite"></div></div>` : ""}<div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
+    `<div class="subhead"><a href="#home">← 學習路線</a><span class="pill">${l ? `${i + 1} / ${lessons.length} · ${l.tag}` : "SANDBOX · 自由實驗"}</span><button class="secondary" id="jump-lab">操作實驗 ↓</button></div><h1 class="lesson-title">${l?.title || "你的 SQL 工作臺"}</h1><div class="lesson-layout"><section class="textblock"><p>${l?.intro || "自由探索內建的三張資料表。可執行 SQL、修改資料並一鍵重置。不會連線到任何真實目標。每次只執行第一個 SQL 陳述式，最多顯示 200 列。"}</p><details ${state.prefs.detail ? "open" : ""}><summary>觀念拆解</summary><p>${l?.concept || "SELECT 讀取，INSERT 新增，UPDATE 修改，DELETE 刪除。任何修改只影響目前 Worker 的記憶體資料庫。重新整理或重置會復原；課程進度不受影響。"}</p></details>${l ? `<div class="goal"><small>本次調查目標</small><p>${l.goal}</p></div><button class="secondary" id="hint">需要一點線索</button><div id="hints"></div>` : ""}<details><summary>資料字典與現有資料</summary><p class="form-note">products：商品 id / 名稱 name / 分類 category / 整數價格 price / 是否上架 released（1=是）。users：帳號、示範密碼、角色。secrets：標籤與秘密。皆為虛構。</p><div id="schema">讀取中…</div><button class="secondary" id="refresh-data">更新資料檢視</button></details>${l ? `<div id="checkpoint"></div>` : ""}${kind === "error" ? `<details open><summary>時間型盲注 · 明確標示的模擬</summary><p>下列時間是教學模型，並非 SQLite 睡眠函式或實際網路測量。</p><label>條件模型<select id="time-condition"><option value="true">真：假設秘密第一字為 A</option><option value="false">假：假設秘密第一字為 Z</option></select></label><button id="simulate" class="secondary">觀察模擬時間</button><div id="time-result"></div></details>` : ""}</section><section class="card" id="workbench"><div class="row between"><span class="eyebrow">${kind === "blind" ? "BLIND ENDPOINT" : "LIVE SQLITE / WASM"}</span><button id="reset" class="secondary">重置資料庫</button></div>${["catalog", "login", "union", "blind", "defense", "errorproof"].includes(kind) ? `<label>${kind === "login" ? "虛構登入 · 帳號" : "虛構商店 · 分類輸入"}<input id="input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${esc(l.start)}"></label>${kind === "login" ? `<label>密碼（示範）<input id="password" value="wrong" autocomplete="off" autocorrect="off" autocapitalize="off"></label>` : ""}<label class="row"><input type="checkbox" id="safe"> 安全模式 · Prepared Statement</label>` : `<label for="input">SQL 編輯器</label><textarea id="input" autocapitalize="off" autocomplete="off" spellcheck="false">${esc(l?.start || "SELECT * FROM products")}</textarea>`}<small id="key-target" aria-live="polite"></small><div class="toolbar" id="keys">${["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "].map((v, j) => `<button class="secondary" data-key="${j}" aria-label="插入 ${esc(v)}">${esc(v)}</button>`).join("")}</div><button id="run">執行查詢 →</button><label>實際送往引擎的 SQL</label><pre id="sql"></pre><div id="binding"></div>${["blind", "errorproof"].includes(kind) ? `<div class="goal"><label for="inferred">你推理的秘密第一個字元（A–Z）</label><input id="inferred" maxlength="1" autocomplete="off" autocapitalize="characters" aria-describedby="inference-help"><small id="inference-help">先完成有／無訊號對照，再用確定性條件查詢辨識一個字元（例如 substr 比較）；random 等函式不作為通關證據。提示中的 X 不是答案。</small><button id="submit-inference" class="secondary">提交推理結果</button><div id="inference-result" aria-live="polite"></div></div>` : ""}<div id="result" class="result" aria-live="polite"><p>先預測結果，再執行。</p></div><details open><summary>查詢旅程 · 可暫停與回看</summary><div class="flow">${flowNames.map((n, j) => `<span data-step="${j}">${j + 1} ${n}</span>`).join("")}</div><div class="stepbox" id="stepbox">執行一次查詢後，就能追蹤它的旅程。</div><div class="toolbar"><button class="secondary" id="prev-step">← 上一步</button><button class="secondary" id="play">播放</button><button class="secondary" id="next-step">下一步 →</button></div><small>流程為教學示意；SQL 結果來自真實引擎，這不是 SQLite 實際執行計畫。</small></details>${i === 1 ? `<details open><summary>逐列篩選觀察器</summary><label>價格上限<input type="range" id="price" min="50" max="1000" value="200"></label><div id="trace"></div><small>此觀察器固定 WHERE released=1 AND price&lt;上限；與上方自由查詢分開。</small></details>` : ""}</section></div>`;
   $("#jump-lab").onclick = () =>
     $("#workbench").scrollIntoView({ block: "start" });
   $("#input").oninput = preview;
@@ -208,22 +210,95 @@ function renderLab(i = -1) {
       save();
     }
   });
+  let activeEditor = $("#input");
+  const positions = new WeakMap();
+  const fieldNames = {
+    input:
+      kind === "login"
+        ? "帳號"
+        : $("#input").tagName === "TEXTAREA"
+          ? "SQL 編輯器"
+          : "分類輸入",
+    password: "密碼",
+    inferred: "推理答案",
+  };
+  function remember(field) {
+    positions.set(field, {
+      start: field.selectionStart ?? field.value.length,
+      end: field.selectionEnd ?? field.value.length,
+    });
+  }
+  function target(field) {
+    activeEditor = field;
+    remember(field);
+    const supported = field.id !== "inferred";
+    $("#key-target").textContent = supported
+      ? "快捷輸入套用：" + fieldNames[field.id]
+      : "推理答案僅接受單一字元，SQL 快捷鍵暫停使用。";
+    $("#keys")
+      .querySelectorAll("button")
+      .forEach((b) => (b.disabled = !supported));
+  }
+  for (const field of document.querySelectorAll("#input,#password,#inferred")) {
+    field.addEventListener("focus", () => target(field));
+    for (const event of ["input", "select", "keyup", "pointerup", "blur"])
+      field.addEventListener(event, () => remember(field));
+  }
+  target(activeEditor);
+  let pressedKey = null,
+    ignorePointerClick = null;
+  $("#keys").addEventListener("pointerdown", (e) => {
+    const button = e.target.closest("[data-key]");
+    if (
+      !button ||
+      button.disabled ||
+      e.button !== 0 ||
+      activeEditor.id === "inferred"
+    )
+      return;
+    pressedKey = button;
+    ignorePointerClick = null;
+    if (document.activeElement === activeEditor) remember(activeEditor);
+    e.preventDefault();
+  });
+  $("#keys").addEventListener("pointerup", (e) => {
+    const button = e.target.closest("[data-key]");
+    if (button && button === pressedKey) {
+      // WebKit may suppress click after a cancelled touch pointerdown.
+      // Activate on pointerup and consume any subsequent synthetic click once.
+      ignorePointerClick = button;
+      e.preventDefault();
+      insertShortcut(button);
+    }
+    pressedKey = null;
+  });
+  $("#keys").addEventListener("pointercancel", () => {
+    pressedKey = null;
+  });
   $("#keys").onclick = (e) => {
-    const b = e.target.closest("[data-key]");
-    if (!b) return;
-    const input = $("#input"),
+    const button = e.target.closest("[data-key]");
+    if (button === ignorePointerClick && e.detail > 0) {
+      ignorePointerClick = null;
+      return;
+    }
+    ignorePointerClick = null;
+    insertShortcut(button);
+  };
+  function insertShortcut(b) {
+    if (!b || b.disabled || activeEditor.id === "inferred") return;
+    const input = activeEditor,
       v = ["'", " -- ", " AND ", " OR ", " = ", "SELECT ", "FROM "][
         +b.dataset.key
       ];
-    input.setRangeText(
-      v,
-      input.selectionStart ?? input.value.length,
-      input.selectionEnd ?? input.value.length,
-      "end",
-    );
-    input.focus();
-    preview();
-  };
+    const range = positions.get(input) ?? {
+      start: input.value.length,
+      end: input.value.length,
+    };
+    input.setRangeText(v, range.start, range.end, "end");
+    remember(input);
+    if (document.activeElement !== input) input.focus({ preventScroll: true });
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
   $("#prev-step").onclick = () => step(-1);
   $("#next-step").onclick = () => step(1);
   $("#play").onclick = () => {

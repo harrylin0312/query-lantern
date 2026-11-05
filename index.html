@@ -12,12 +12,18 @@
       content="從零開始，兩日理解 SQL Injection。在瀏覽器內安全操作真正的 SQLite。"
     />
     <title>Query Lantern｜極光 SQL 調查站</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=__APP_VERSION__" />
   </head>
   <body>
     <header>
       <a class="brand" href="#home"
-        ><span class="logo">◈</span> QUERY LANTERN <small>極光調查站</small></a
+        ><span class="logo">◈</span><span class="brand-name">QUERY LANTERN</span
+        ><span class="brand-meta"
+          ><small>極光調查站</small
+          ><span class="version" aria-label="網站版本"
+            >v__APP_VERSION__</span
+          ></span
+        ></a
       ><span class="status">● LOCAL LAB</span>
     </header>
     <nav aria-label="主要導覽">
@@ -29,6 +35,6 @@
     <footer>
       所有系統與資料皆為虛構 · SQL 僅於本機隔離環境執行<br />原理優先，讓每次輸入都有理由。
     </footer>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=__APP_VERSION__"></script>
   </body>
 </html>

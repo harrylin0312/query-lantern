@@ -1,4 +1,5 @@
 const { test, expect } = require("@playwright/test");
+const { version } = require("../package.json");
 async function go(page, i) {
   await page.goto("./#lesson/" + i);
   await expect(page.locator("#schema")).toContainText("products");
@@ -392,4 +393,127 @@ test("隨機函式不作為判題證據；錯誤通道不洩漏秘密字串", as
   );
   expect(result.passed).toBe(false);
   expect(result.readonly.error).toContain("readonly");
+});
+
+test("快捷符號跟隨帳號與密碼欄位，保留游標及選取範圍", async ({ page }) => {
+  await go(page, 3);
+  await page.locator("#input").fill("admin");
+  await page.locator("#password").fill("abcXYZdef");
+  await page.locator("#password").evaluate((el) => el.setSelectionRange(3, 6));
+  if (test.info().project.name === "webkit-mobile")
+    await page.locator('[data-key="2"]').tap();
+  else await page.locator('[data-key="2"]').click();
+  await expect(page.locator("#password")).toHaveValue("abc AND def");
+  await expect(page.locator("#input")).toHaveValue("admin");
+  await expect(page.locator("#password")).toBeFocused();
+  await expect(page.locator("#key-target")).toContainText("密碼");
+  await expect(page.locator("#sql")).toContainText("password = 'abc AND def'");
+  await page.locator("#input").fill("12345");
+  await page.locator("#input").press("ArrowLeft");
+  await page.locator('[data-key="0"]').click();
+  await expect(page.locator("#input")).toHaveValue("1234'5");
+  await expect(page.locator("#password")).toHaveValue("abc AND def");
+});
+
+test("快捷鍵支援鍵盤操作及 SQL 編輯器，答案欄不誤寫其他欄位", async ({
+  page,
+}) => {
+  await page.goto("./#lab");
+  await page.locator("#input").fill("SELECT 1");
+  await page.locator("#input").press("Home");
+  await page.locator("#input").evaluate((el) => el.setSelectionRange(0, 0));
+  await page.locator('[data-key="1"]').focus();
+  await page.locator('[data-key="1"]').press("Enter");
+  await expect(page.locator("#input")).toHaveValue(" -- SELECT 1");
+  await go(page, 5);
+  await page.locator("#inferred").fill("M");
+  await expect(page.locator('[data-key="2"]')).toBeDisabled();
+  await expect(page.locator("#key-target")).toContainText("單一字元");
+  await expect(page.locator("#input")).toHaveValue("文具' AND 1=1 -- ");
+  await page.locator("#input").focus();
+  await expect(page.locator('[data-key="2"]')).toBeEnabled();
+});
+
+test("長文字與多行輸入不改變預覽區、欄寬及執行按鈕位置", async ({ page }) => {
+  const rects = () =>
+    page.evaluate(() =>
+      Object.fromEntries(
+        ["workbench", "input", "keys", "run", "sql", "binding", "result"].map(
+          (id) => {
+            const r = document.getElementById(id).getBoundingClientRect();
+            return [
+              id,
+              {
+                x: r.x + scrollX,
+                y: r.y + scrollY,
+                width: r.width,
+                height: r.height,
+              },
+            ];
+          },
+        ),
+      ),
+    );
+  await go(page, 3);
+  await page.locator("#safe").check();
+  await page.locator("#input").fill("a");
+  await page.locator("#password").fill("b");
+  const before = await rects();
+  await page.locator("#password").fill("very-long-password".repeat(400));
+  await page.locator("#input").fill("long-account".repeat(400));
+  const after = await rects();
+  for (const id of Object.keys(before)) {
+    for (const key of ["x", "y", "width", "height"])
+      expect(
+        Math.abs(before[id][key] - after[id][key]),
+        `${id}.${key}`,
+      ).toBeLessThan(1);
+  }
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.goto("./#lab");
+  await page.locator("#input").fill("SELECT 1");
+  const single = await rects();
+  await page
+    .locator("#input")
+    .fill(
+      Array.from(
+        { length: 80 },
+        (_, i) => "SELECT " + i + " -- " + "x".repeat(80),
+      ).join("\n"),
+    );
+  const multi = await rects();
+  for (const id of ["workbench", "input", "run", "sql", "result"])
+    for (const key of ["x", "y", "width", "height"])
+      expect(
+        Math.abs(single[id][key] - multi[id][key]),
+        `${id}.${key}`,
+      ).toBeLessThan(1);
+  expect(
+    await page
+      .locator("#sql")
+      .evaluate((el) => el.scrollHeight > el.clientHeight),
+  ).toBe(true);
+});
+
+test("站名旁版本號在手機及所有路由可見，建置資源使用同一版本", async ({
+  page,
+}) => {
+  for (const path of ["home", "lesson/3", "settings"]) {
+    await page.goto("./#" + path);
+    await expect(page.locator(".brand small")).toBeVisible();
+    await expect(page.locator(".brand small")).toHaveText("極光調查站");
+    await expect(page.locator(".version")).toBeVisible();
+    await expect(page.locator(".version")).toHaveText("v" + version);
+  }
+  const assets = await page
+    .locator('script[type="module"]')
+    .getAttribute("src");
+  expect(assets).toBe("app.js?v=" + version);
+  expect(
+    await page.locator('link[rel="stylesheet"]').getAttribute("href"),
+  ).toBe("style.css?v=" + version);
 });
