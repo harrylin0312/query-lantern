@@ -1,12 +1,12 @@
-# AQL Lab
+# SQL Lab
 
 繁體中文 SQL 與 SQL 注入互動學習網站，透過關卡、實驗及知識手冊，理解查詢語法、漏洞原理與參數化防禦。
 
-網站：https://harrylin0312.github.io/aql_lab/
+網站：https://harrylin0312.github.io/sql_lab/
 
 ## 版本演進
 
 - **v1.0**：建立十關學習流程、SQLite 實驗、提示、測驗與進度保存，並改進盲注關卡的推理驗證。
 - **v1.1.0**：改善手機輸入、SQL 快捷鍵與預覽版面，加入版本顯示。
 - **v1.2.0**：新增可搜尋的初學者知識手冊、範例試跑及亮／暗閱讀主題。
-- **專案更名**：由 Query Lantern 更名為 AQL Lab，儲存庫與網站路徑改為 `aql_lab`。
+- **專案更名**：由 Query Lantern 更名為 SQL Lab，儲存庫與網站路徑改為 `sql_lab`。

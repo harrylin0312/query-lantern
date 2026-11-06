@@ -2,7 +2,7 @@
 
 本機最終 Chromium：25/25 通過（22.0 秒）。新增條目中的全部23個SQL例子皆以真正SQLite驗證結果；查手冊保留原輸入與結果，獨立範例不改動自由實驗資料；亮暗切換、系統偏好、持久保存及備份匯入匯出皆通過。320px與390px亮／暗手冊頁面均無整頁橫向溢出。
 
-本機macOS的WebKit測試引擎出現啟動停滯，未將不完整執行宣稱為通過。GitHub Actions [run 42020963215](https://github.com/harrylin0312/aql_lab/actions/runs/42020963215) 的 build、deploy、verify-live 全部成功：建置環境 Chromium／行動 WebKit 共 **50/50 通過（1.0 分鐘）**；部署後對正式公開網址執行同套測試也 **50/50 通過（1.0 分鐘）**。受測應用提交為 `07cdc42`。未使用實體iPhone Safari。
+本機macOS的WebKit測試引擎出現啟動停滯，未將不完整執行宣稱為通過。GitHub Actions [run 42020963215](https://github.com/harrylin0312/sql_lab/actions/runs/42020963215) 的 build、deploy、verify-live 全部成功：建置環境 Chromium／行動 WebKit 共 **50/50 通過（1.0 分鐘）**；部署後對正式公開網址執行同套測試也 **50/50 通過（1.0 分鐘）**。受測應用提交為 `07cdc42`。未使用實體iPhone Safari。
 
 另以電腦內建瀏覽器直接打開正式站，確認 v1.2.0、亮色切換、初學者快速查詢與 SQL 範例試跑，實際回傳四列商品；截圖見 `docs/qa/v1.2.0-handbook-public.jpg`。
 
@@ -12,7 +12,7 @@
 
 # v1.1.0 輸入體驗驗證
 
-本機 Chromium + iPhone 13 尺寸 WebKit **40/40 通過（22.2 秒）**。正式 GitHub Pages 同套測試 **40/40 通過（44.4 秒）**。受測應用提交 `df1aba0`；GitHub Actions [run 41962909585](https://github.com/harrylin0312/aql_lab/actions/runs/41962909585) 建置、測試與部署皆成功。
+本機 Chromium + iPhone 13 尺寸 WebKit **40/40 通過（22.2 秒）**。正式 GitHub Pages 同套測試 **40/40 通過（44.4 秒）**。受測應用提交 `df1aba0`；GitHub Actions [run 41962909585](https://github.com/harrylin0312/sql_lab/actions/runs/41962909585) 建置、測試與部署皆成功。
 
 正式站另以行動 WebKit 截圖確認「極光調查站 v1.1.0」可見，390px 視窗的頁面寬度仍為 390px。
 
@@ -26,7 +26,7 @@
 
 本機 Chromium + iPhone 13 尺寸 WebKit：**32/32 通過（22.7 秒）**。正式 GitHub Pages 的同一套 Chromium + 行動 WebKit 測試：**32/32 通過（38.9 秒）**。受測應用提交：`5defbb5`。
 
-GitHub Actions [run 41944602730](https://github.com/harrylin0312/aql_lab/actions/runs/41944602730) 的建置、測試與 Pages 部署均成功。`app.js`、`course.js`、`worker.js` 與 `sql-wasm.wasm` 全部 HTTP 200，SHA-256 與本機受測版本一致。
+GitHub Actions [run 41944602730](https://github.com/harrylin0312/sql_lab/actions/runs/41944602730) 的建置、測試與 Pages 部署均成功。`app.js`、`course.js`、`worker.js` 與 `sql-wasm.wasm` 全部 HTTP 200，SHA-256 與本機受測版本一致。
 
 新版第 6、9、10 關另以 390px 行動 WebKit 檢查：頁面寬度皆為 390px，沒有整頁橫向溢出或 pageerror。下方 16/16 為初版歷史紀錄，不代表新版評量，也不代表實體 iPhone 測試。
 
@@ -49,9 +49,9 @@ GitHub Actions [run 41944602730](https://github.com/harrylin0312/aql_lab/actions
 | 第二次推送後自動重新建置、測試、部署                         | 成功，run 41941048269                     |
 | 公開 HTML / app.js / worker.js / sql-wasm.js / sql-wasm.wasm | 全部 HTTP 200；WASM MIME application/wasm |
 
-正式網址：https://harrylin0312.github.io/aql_lab/
+正式網址：https://harrylin0312.github.io/sql_lab/
 
-Actions：https://github.com/harrylin0312/aql_lab/actions
+Actions：https://github.com/harrylin0312/sql_lab/actions
 
 涵蓋：完整八關與理解檢查、跨刷新進度、SQLite 真實結果、注入與參數化對照、資料庫修改與重置、語法錯誤、3 秒逾時終止及恢復、分層提示、錯題與模擬考計分、備份下載與有效／無效匯入、手機整頁寬度、流程控制、條件觀察器、模擬標示、輸出截斷與記憶體限制後恢復、弱點主題排序與補強後解除標記。
 
