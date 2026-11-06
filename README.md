@@ -1,10 +1,10 @@
-# Query Lantern｜極光 SQL 調查站
+# AQL Lab｜極光 SQL 調查站
 
 繁體中文、Mobile-first 的 SQL Injection 學習遊戲。完全靜態，無帳號、無漏洞後端。資料均為虛構。
 
-公開網站：https://harrylin0312.github.io/query-lantern/
+公開網站：https://harrylin0312.github.io/aql_lab/
 
-GitHub：https://github.com/harrylin0312/query-lantern
+GitHub：https://github.com/harrylin0312/aql_lab
 
 ## 學習內容
 
@@ -50,7 +50,7 @@ npx playwright install chromium webkit
 npm test
 ```
 
-可用 `PLAYWRIGHT_BROWSERS_PATH` 指定測試引擎位置。正式站可用 `TEST_URL=https://帳號.github.io/query-lantern/ npm test` 重跑同套測試。測試包含十關完成與理解檢查、真實引擎、參數化對照、重置、逾時恢復、提示、測驗評分、錯題、儲存恢復、匯出／匯入與小螢幕橫向溢出。
+可用 `PLAYWRIGHT_BROWSERS_PATH` 指定測試引擎位置。正式站可用 `TEST_URL=https://帳號.github.io/aql_lab/ npm test` 重跑同套測試。測試包含十關完成與理解檢查、真實引擎、參數化對照、重置、逾時恢復、提示、測驗評分、錯題、儲存恢復、匯出／匯入與小螢幕橫向溢出。
 
 WebKit 裝置設定為 iPhone 13 模擬，不能等同實體 iPhone Safari 驗證。無真人學習成效試驗。自適應為主題優先排序與補充教學，沒有宣稱自動估算考試能力。
 
